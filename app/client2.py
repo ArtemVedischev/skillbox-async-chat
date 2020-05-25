@@ -1,4 +1,6 @@
-﻿import asyncio
+import apiai
+import json
+import asyncio
 from asyncio import transports
 
 from PySide2.QtWidgets import QMainWindow, QApplication
@@ -20,6 +22,14 @@ class ClientProtocol(asyncio.Protocol):
         encoded = message.encode()
         self.transport.write(encoded)
 
+        request = apiai.ApiAI('51d0db55271a40e79439cac98e13fbb3').text_request()
+        request.lang = 'ru'
+        request.session_id = 'session_1'
+        request.query = message
+        response = json.loads(request.getresponse().read().decode('utf-8'))
+        print(response['result']['fulfillment']['speech'])
+        return response['result']['action']
+
     def connection_made(self, transport: transports.Transport):
         self.window.append_text("Connected")
         self.transport = transport
@@ -35,14 +45,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.message_button.clicked.connect(self.button_handler)
 
-    def button_handler(self):
-        message_text = self.message_input.text()
-        self.message_input.clear()
-        self.protocol.send_data(message_text)
+    def button_handler(self, response):
+         message_text = self.response()
+         self.message_input.clear()
+         self.protocol.send_data(message_text)
 
 
     def append_text(self, content: str):
-        self.message_box.appendPlainText(content)
+        request = apiai.ApiAI('51d0db55271a40e79439cac98e13fbb3').text_request()
+        request.lang = 'ru'
+        request.session_id = 'session_1'
+        request.query = content
+        response = json.loads(request.getresponse().read().decode('utf-8'))
+        print(response['result']['fulfillment']['speech'])
+        return response['result']['action']
+        self.message_box.response
 
     def build_protocol(self):
         self.protocol = ClientProtocol(self)
